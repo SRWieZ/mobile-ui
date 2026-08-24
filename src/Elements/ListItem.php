@@ -85,7 +85,7 @@ class ListItem extends Element
             $this->leadingIconBackgroundColor($attrs['leadingIconBgColor']);
         }
         if (isset($attrs['leadingImage'])) {
-            $this->leadingImage($attrs['leadingImage']);
+            $this->leadingImage($attrs['leadingImage'], $attrs['leadingImageFit'] ?? null);
         }
         if (isset($attrs['leadingCheckbox'])) {
             $this->leadingCheckbox((bool) $attrs['leadingCheckbox']);
@@ -332,10 +332,22 @@ class ListItem extends Element
         return $this;
     }
 
-    public function leadingImage(string $url): static
+    /**
+     * Leading thumbnail. Accepts a remote URL or an on-device path
+     * (`file://…` or absolute) — both platforms decode local files directly,
+     * since the async image loaders can't read them.
+     *
+     * `$fit` is `cover` (default: fill the 56pt slot, cropping) or `contain`
+     * (letterbox), for artwork whose aspect ratio carries the meaning.
+     */
+    public function leadingImage(string $url, ?string $fit = null): static
     {
         $this->listItemProps['leading_type'] = 'image';
         $this->listItemProps['leading_value'] = $url;
+
+        if ($fit !== null) {
+            $this->listItemProps['leading_image_fit'] = $fit;
+        }
 
         return $this;
     }

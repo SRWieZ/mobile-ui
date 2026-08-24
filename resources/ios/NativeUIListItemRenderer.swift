@@ -75,7 +75,8 @@ struct NativeUIListItemRenderer: View {
                 monogramColor: leadingMonogramColor,
                 iconBgColor: leadingIconBgColor,
                 checked: leadingChecked,
-                changeCb: onLeadingChangeCb
+                changeCb: onLeadingChangeCb,
+                imageFit: p.getString("leading_image_fit")
             )
 
             // Text content
@@ -131,7 +132,7 @@ struct NativeUIListItemRenderer: View {
     }
 
     @ViewBuilder
-    private func buildLeadingContent(type: String, value: String, monogramColor: Int, iconBgColor: Int = 0, checked: Bool = false, changeCb: Int = 0) -> some View {
+    private func buildLeadingContent(type: String, value: String, monogramColor: Int, iconBgColor: Int = 0, checked: Bool = false, changeCb: Int = 0, imageFit: String = "") -> some View {
         switch type {
         case "icon":
             if iconBgColor != 0 {
@@ -170,10 +171,27 @@ struct NativeUIListItemRenderer: View {
             .accessibilityHidden(true)
         case "image":
             // Decorative — the row's text content carries the meaning.
-            AsyncImage(url: URL(string: value)) { image in
-                image.resizable().scaledToFill()
-            } placeholder: {
-                RoundedRectangle(cornerRadius: 4).fill(Color(.systemGray5))
+            // `leadingImageFit="contain"` letterboxes instead of cropping,
+            // for artwork whose aspect ratio carries the meaning (a wide
+            // illustration, a logo) rather than a square thumbnail.
+            let containsImage = imageFit == "contain"
+            Group {
+                if let path = NativeUILocalImage.path(for: value) {
+                    // Bundled / on-device file. `AsyncImage` and URLSession
+                    // can't load `file://` or bare filesystem paths, so decode
+                    // directly — the same route the `<image>` element takes.
+                    if let uiImage = UIImage(contentsOfFile: path) {
+                        leadingImageBody(Image(uiImage: uiImage), contains: containsImage)
+                    } else {
+                        RoundedRectangle(cornerRadius: 4).fill(Color(.systemGray5))
+                    }
+                } else {
+                    AsyncImage(url: URL(string: value)) { image in
+                        leadingImageBody(image, contains: containsImage)
+                    } placeholder: {
+                        RoundedRectangle(cornerRadius: 4).fill(Color(.systemGray5))
+                    }
+                }
             }
             .frame(width: 56, height: 56)
             .clipShape(RoundedRectangle(cornerRadius: 4))
@@ -224,6 +242,18 @@ struct NativeUIListItemRenderer: View {
         } else {
             tinted
                 .accessibilityValue(a11yValue)
+        }
+    }
+
+    /// Scale a leading image to the 56pt slot. `contain` letterboxes so a
+    /// non-square illustration keeps its shape; the default fills and crops,
+    /// which is what a square thumbnail or photo wants.
+    @ViewBuilder
+    private func leadingImageBody(_ image: Image, contains: Bool) -> some View {
+        if contains {
+            image.resizable().scaledToFit()
+        } else {
+            image.resizable().scaledToFill()
         }
     }
 
