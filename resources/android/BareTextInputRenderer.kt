@@ -166,6 +166,11 @@ object BareTextInputRenderer {
                 }
                 innerTextField()
             },
+            // Filled and Outlined pass this since day one; Bare never did, so
+            // `keyboard="number"` (and the derived capitalization) were
+            // silently ignored on bare inputs — the plain text keyboard
+            // always came up.
+            keyboardOptions = keyboardOptionsFor(props),
             keyboardActions = KeyboardActions(onAny = {
                 // Flush the settled caret before the submit event fires.
                 selectionReporter.flush(value)
